@@ -1,0 +1,95 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <script type="text/javascript" src="/chat/jquery.js"></script>
+    <script type="text/javascript" src="/chat/cookiePlugin.js"></script>
+    <link rel="stylesheet" href="/chat/jquery-ui-1.8.2.custom.css" />
+    <script type="text/javascript" src="/chat/jquery-ui-1.8.2.custom.min.js"></script>
+    <script>
+      //plugin for setting the hight of the iframe to the hight of the page sourced into it
+      //this will remove the vertical scroll bar for the iframe but have the scroll bar for the parent page
+      $.fn.resizeiframe=function(){
+         $(this).load(function() {
+             $(this).height( $(this).contents().find("body").height() );
+         });
+         $(this).click(function() {
+             $(this).height( $(this).contents().find("body").height() );
+         });
+      }
+    </script>
+</head>
+<body>
+    <script>
+        //if for any reason the child page is referenced directly the child page populate the iframeSRC cookie with its href and call the parent (this page) which will load the child page into the iframe
+        if($.cookie('iframeSRC') == null) { $.cookie('iframeSRC', '/project/svn-helloworld/wiki', { path: '/' }) }; // if the parent page is open directly the cookie would be null
+        //by creating the iframe dinamically I can set the src. This will make the brower back button to work properly. (back button did not work when setting the iframe src attribute)
+        $('<iframe id="iframeID" name="iframeName" src="'+$.cookie('iframeSRC')+'" frameborder="0" width="100%" scrolling="no"></iframe>').appendTo('body')
+        .resizeiframe();
+    </script>
+
+<!-- User List -->
+<script>
+var title="";
+var user="";
+var userID="";
+var userList="";
+var logged="";
+var logging="no";
+var iframe;
+$(document).ready(function(){
+  $('#iframeID').load(function(){
+    iframe = $("#iframeID").contents();
+    title = iframe.find("title").html();
+    $(document).find("title").html(title);
+    //$('#users', iframe).html("<li><a class='user' href='javascript:void(null);' onclick=\"javascript:parent.createBox('User')\">UserNmae</a></li>");
+    $('li.first', iframe).each(function(index) {
+        logged=$(this).text().slice(0,12); //assuming first 13 chars before the user name
+        if (logged == 'logged in as') { logged="yes"; $.cookie('logged',true,{path : '/'}); $('#users', iframe).html(userList); } else { logged="no"; $.cookie('logged',false,{path : '/'}) }
+        user=$(this).text().slice(13); //assuming 13 chars before the user name
+        if(logged == 'yes'){ $(this).html('logged in as <a href="/project/svn-helloworld/wiki/user/'+user+'">'+user+'</a>') }; //make the username a link to its own page
+        return false; //assuming the first found is the one with the user info
+    });
+    //alert(user);
+    $('a[href$="logout"]', iframe).click(function(event){
+        ws.send('closeconnection');
+        ws.send('logout');
+        $.cookie('logged',false,{path : '/'});
+        if(ws != null) console.log('closing connection');
+        setTimeout(function(){ws.close()},1000);
+        //alert('loggingout...');
+        $('.group', iframe).each(function(){
+                         var groupName=$(this).text();
+                         //alert('user: '+user+' leaving: '+$(this).attr('value'));
+                         $.ajax({
+                             url:"/cgi-bin/chat_leaveGroup.sh?user=%22"+user+"%22;groupName=%22"+groupName+"%22;type=%22logout%22",
+                             cache:false,
+                             async: false,
+                             type:"POST",
+                             success: function(data) {
+                               //alert(data);
+                               if (data=="leftGroup") { sendme(groupName,'System','"'+user+'" has logged out') };
+                             }
+                       });
+        });
+        logged="no";
+        // $.ajax({
+        //   url:"/cgi-bin/wiki_logout.sh",
+        //   //data:"user="+user+";userID="+userID,
+        //   cache:false,
+        //   async: false,
+        //   type:"GET",
+        // });
+    });
+  });
+});
+</script>
+
+    <script type="text/javascript" src="/chat/chat_MYchatbox_websocket_parentpage.js"></script>
+    <link type="text/css" href="/chat/chat_groups.css" rel="stylesheet" />
+    <script type="text/javascript" src="/chat/chat_groups_parentpage.js"></script>
+    <script type="text/javascript" src="/chat/MYchatbox.js"></script>
+
+<script>
+    $('body').click(function(){ clearFlashingTitle() });
+</script>
+</body></html>

@@ -1,0 +1,6 @@
+        .dlg-no-close .ui-dialog-titlebar-close {
+            display: none;
+        }
+        .dlg-no-title .ui-dialog-titlebar {
+            display: none;
+        }
